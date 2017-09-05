@@ -6,7 +6,7 @@ const sslPath = '/etc/letsencrypt/live/circles.antoniasiu.co.uk';
 const options = {
   key: fs.readFileSync(sslPath + '/privkey.pem').toString(),
   cert: fs.readFileSync(sslPath + '/fullchain.pem').toString(),
-}
+};
 
 const app = https.createServer(options);
 const io = require('socket.io').listen(app);
