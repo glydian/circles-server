@@ -1,10 +1,18 @@
 /* start server and socket.io */
-const app = require('http').createServer();
-const io = require('socket.io')(app);
+const https = require('https');
+const fs = require('fs');
 
-app.listen(3030);
+const sslPath = '/etc/letsencrypt/live/circles.antoniasiu.co.uk';
+const options = {
+  key: fs.readFileSync(sslPath + '/privkey.pem').toString(),
+  cert: fs.readFileSync(sslPath + '/fullchain.pem').toString(),
+}
 
-console.log('server running on port 3030');
+const app = https.createServer(options);
+const io = require('socket.io').listen(app);
+app.listen(3000);
+
+console.log('server running on port 3000');
 
 /* constants */
 
