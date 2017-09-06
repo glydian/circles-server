@@ -1,5 +1,4 @@
 /* start server and socket.io */
-const https = require('https');
 const fs = require('fs');
 
 const sslPath = '/etc/letsencrypt/live/circles.antoniasiu.co.uk';
@@ -8,11 +7,10 @@ const options = {
   cert: fs.readFileSync(sslPath + '/fullchain.pem').toString(),
 };
 
-const app = https.createServer(options);
-const io = require('socket.io').listen(app);
-app.listen(3000);
-
-console.log('server running on port 3000');
+const https = require('https');
+const httpsServer = https.createServer(options);
+const io = require('socket.io').listen(httpsServer);
+httpsServer.listen(3000, () => console.log('https running on port 3000'));
 
 /* constants */
 
