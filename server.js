@@ -156,8 +156,8 @@ function movePlayer(player) {
 }
 
 function bounceOffWalls() {
-  const innerR2 = sq(getInnerRadius(tickTime) + ballRadius),
-    outerR2 = sq(getOuterRadius(tickTime) + ballRadius);
+  const innerR2 = sq(getInnerRadius(tickTime) + ballRadius);
+  const outerR2 = sq(getOuterRadius(tickTime) + ballRadius);
   let playersInside = 0;
   players.forEach((p) => {
     if (p.inGame) playersInside += 1;
