@@ -28,7 +28,7 @@ function getInnerRadius(currentTickTime) {
 }
 
 function getOuterRadius(currentTickTime) {
-  return getInnerRadius(currentTickTime + getInnerRadius(0));
+  return getInnerRadius(currentTickTime) + getInnerRadius(0);
 }
 
 // grid is centred about (0,0)
