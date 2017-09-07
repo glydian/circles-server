@@ -302,7 +302,11 @@ function sendDataToClients() {
       score: player.score
     });
   });
-  io.emit('mapUpdate', playersInfo, powerups, tickTime);
+  io.emit('mapUpdate', {
+    playersInfo,
+    powerups,
+    tickTime
+  });
 }
 
 function getFreePosition() {
