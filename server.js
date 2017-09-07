@@ -60,7 +60,7 @@ let players = [];
 let powerups = [];
 
 io.on('connection', (socket) => {
-  console.log('info : player connection');
+  console.log(`conn : (${socket.id}) player connection`);
   let player = null;
   socket.on('playerInfo', (nickname) => {
     // generate player and add to list
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
       return;
     }
     nickname = validateNickname(nickname);
-    console.log(`info : "${nickname}" connected`);
+    console.log(`conn : (${id}) "${nickname}" connected`);
     player = {
       id: id,
       socket: socket,
@@ -102,7 +102,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (player === null) return;
     deletePlayer(player.id);
-    console.log(`info : (${player.id}) "${player.nickname}" disconnected`);
+    console.log(`disc : (${player.id}) "${player.nickname}" disconnected`);
     if (players.length === 0) stopTicking();
   });
 
@@ -130,9 +130,8 @@ function update() {
   }
   players.forEach((player) => {
     movePlayer(player);
-    // will also change scores
-    bounceOffWalls(player);
   });
+  bounceOffWalls(); // will also change scores
   handleCollisions();
   handlePowerups();
   sendDataToClients();
@@ -174,7 +173,8 @@ function bounceOffWalls() {
     }
     if (!p.inGame) {
       if (outerR2 > centreDistance2) {
-        p.socket.disconnect();
+        //p.socket.disconnect();
+        console.log(`perr : (${p.id}) "${p.nickname}" out of bounds`);
       } else if (innerR2 < centreDistance2) {
         // if trying to get back inside
         // bounce off a 'ball' in the centre
@@ -235,10 +235,10 @@ function bounceBalls(p1, p2) {
     weight1 = 2 * p2.powers.weight / massTotal,
     weight2 = 2 * p1.powers.weight / massTotal;
   // change player velocities
-  p1.vel.x += xCol * weight1;
-  p1.vel.y += yCol * weight1;
-  p2.vel.x -= xCol * weight2;
-  p2.vel.y -= yCol * weight2;
+  p1.vel.x = xCol * weight1;
+  p1.vel.y = yCol * weight1;
+  p2.vel.x = -xCol * weight2;
+  p2.vel.y = -yCol * weight2;
 }
 
 function handlePowerups() {
@@ -302,7 +302,7 @@ function sendDataToClients() {
       score: player.score
     });
   });
-  io.emit('mapUpdate', playersInfo, tickTime);
+  io.emit('mapUpdate', playersInfo, powerups, tickTime);
 }
 
 function getFreePosition() {
