@@ -66,6 +66,7 @@ io.on('connection', (socket) => {
     // generate player and add to list
     const id = socket.id;
     if (havePlayerID(id)) {
+      socket.emit('playerIDTaken');
       socket.disconnect();
       deletePlayer(id);
       return;
@@ -92,7 +93,7 @@ io.on('connection', (socket) => {
         weight: 1,
         accel: 1
       },
-      inGame: false,
+      inGame: true,
       score: 0
     };
     players.push(player);
@@ -107,8 +108,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('keyUpdate', (keys) => {
-    if (player === null) socket.disconnect();
-    else player.keys = keys;
+    if (player === null){
+      socket.emit('noPlayerObject');
+      socket.disconnect();
+    } else player.keys = keys;
   });
 });
 
@@ -172,10 +175,14 @@ function bounceOffWalls() {
       playersFallenOutside += 1;
     }
     if (!p.inGame) {
-      if (outerR2 > centreDistance2) {
-        //p.socket.disconnect();
-        console.log(`perr : (${p.id}) "${p.nickname}" out of bounds`);
-      } else if (innerR2 < centreDistance2) {
+      if (centreDistance2 > outerR2) {
+        // if player goes outside the outer ring
+        // assume inactive or deliberate leave attempt
+        // and kick them
+        p.socket.emit('outOfBounds');
+        p.socket.disconnect();
+        console.log(`disc : (${p.id}) "${p.nickname}" out of bounds with x:${p.pos.x}, y:${p.pos.y}`);
+      } else if (centreDistance2 < innerR2) {
         // if trying to get back inside
         // bounce off a 'ball' in the centre
         // which has the same effect as bouncing off the grid
@@ -187,6 +194,10 @@ function bounceOffWalls() {
           vel: {
             x: 0,
             y: 0
+          },
+          powers: {
+            // set large weight for strong bounceback
+            weight: 20
           }
         });
       }
@@ -225,7 +236,7 @@ function bounceBalls(p1, p2) {
     distSq = sq(xDist) + sq(yDist),
     xVel = p2.vel.x - p1.vel.x,
     yVel = p2.vel.y - p1.vel.y,
-    dotProduct = xDist * xVel + yDist + yVel;
+    dotProduct = xDist * xVel + yDist * yVel;
   // if dotProduct <= 0, balls aren't heading in the same direction
   if (dotProduct <= 0) return;
   const collisionScale = dotProduct / distSq,
