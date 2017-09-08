@@ -17,8 +17,8 @@ httpsServer.listen(3000, () => console.log('https running on port 3000'));
 const tickLength = 20;
 const gameLengthInTicks = 1500;
 
-const maxSpeed = 20;
-const accel = 1;
+const maxSpeed = 14;
+const accel = 0.9;
 const ballRadius = 20;
 
 /* map functions */
