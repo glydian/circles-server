@@ -108,7 +108,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('keyUpdate', (keys) => {
-    if (player === null){
+    if (player === null) {
       socket.emit('noPlayerObject');
       socket.disconnect();
     } else player.keys = keys;
@@ -284,23 +284,57 @@ function handlePowerups() {
             break;
           case 5:
             player.powers.weight = 0.7;
+            break;
+          case 6:
+          case 7: // a 'return to game' powerup is twice as common
+            player.powers.returnToGame = true;
+            // allow four seconds
+            player.powers.returnToGameCooldown = tickTime + (1000 / tickLength) * 4;
         }
       }
     });
   });
   // place a new powerup with some probability
   const probability = players.length / gameLengthInTicks;
-  if (Math.random() < probability) powerups.push({
-    pos: {
-      x: Math.random * gridSize * 0.35 - gridSize * 0.35 / 2,
-      y: Math.random * gridSize * 0.35 - gridSize * 0.35 / 2
-    },
-    /* maxspeed: +:0, -:1
-       weight:   +:2, -:3
-       accel:    +:4, -:5
-    */
-    type: Math.floor(Math.random * 6)
-  });
+  if (Math.random() < probability) {
+    const innerR = getInnerRadius(tickTime),
+      innerR2 = sq(innerR),
+      outerR = getOuterRadius(tickTime),
+      outerR2 = sq(outerR),
+      type = Math.floor(Math.random() * 8);
+    let x, y, distanceFromCentre;
+    let attempts = 20;
+    // if type > 5, then a returnToGame is being spawned
+    // and these should happen outside the inner circle
+    if (type > 5) {
+      do {
+        x = (Math.random() - 0.5) * outerR2 * 2;
+        y = (Math.random() - 0.5) * outerR2 * 2;
+        distanceFromCentre = sq(x) + sq(y);
+      } while (distanceFromCentre > innerR2 &&
+        distanceFromCentre < outerR2 && attempts-- > 0);
+    } else {
+      do {
+        x = (Math.random() - 0.5) * innerR2 * 2;
+        y = (Math.random() - 0.5) * innerR2 * 2;
+        distanceFromCentre = sq(x) + sq(y);
+      } while (sq(x) + sq(y) > innerR2 && attempts-- > 0);
+    }
+    // if run out of attempts don't push powerup
+    if(attempts <= 0) return;
+    powerups.push({
+      pos: {
+        x,
+        y
+      },
+      /* maxspeed: +:0, -:1
+         weight:   +:2, -:3
+         accel:    +:4, -:5
+         returnToGame: 6, 7
+      */
+      type: type
+    });
+  }
 }
 
 function sendDataToClients() {
