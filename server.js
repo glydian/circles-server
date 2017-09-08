@@ -328,15 +328,15 @@ function handlePowerups() {
     // returnToGame should spawn outside the inner circle
     if (type === 6) {
       do {
-        x = (Math.random() - 0.5) * outerR2 * 2;
-        y = (Math.random() - 0.5) * outerR2 * 2;
+        x = (Math.random() - 0.5) * outerR * 2;
+        y = (Math.random() - 0.5) * outerR * 2;
         distanceFromCentre = sq(x) + sq(y);
       } while (distanceFromCentre > innerR2 &&
         distanceFromCentre < outerR2 && attempts-- > 0);
     } else {
       do {
-        x = (Math.random() - 0.5) * innerR2 * 2;
-        y = (Math.random() - 0.5) * innerR2 * 2;
+        x = (Math.random() - 0.5) * innerR * 2;
+        y = (Math.random() - 0.5) * innerR * 2;
         distanceFromCentre = sq(x) + sq(y);
       } while (sq(x) + sq(y) > innerR2 && attempts-- > 0);
     }
