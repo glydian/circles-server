@@ -134,6 +134,8 @@ function update() {
         returnToGameCooldown: 0
       };
     });
+    // clear all powerups
+    powerups = [];
   }
   players.forEach((player) => {
     movePlayer(player);
