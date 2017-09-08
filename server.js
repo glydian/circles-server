@@ -121,21 +121,7 @@ function update() {
   tickTime += 1;
   // if time is up restart game
   if (tickTime === gameLengthInTicks) {
-    tickTime = 0;
-    players.forEach((player) => {
-      // bring all players back into play
-      player.inGame = true;
-      // reset all player powers
-      player.powers = {
-        maxspeed: 1,
-        weight: 1,
-        accel: 1,
-        returnToGame: false,
-        returnToGameCooldown: 0
-      };
-    });
-    // clear all powerups
-    powerups = [];
+    endRound();
   }
   players.forEach((player) => {
     movePlayer(player);
@@ -144,6 +130,25 @@ function update() {
   handleCollisions();
   handlePowerups();
   sendDataToClients();
+}
+
+function endRound() {
+  // reset grid
+  tickTime = 0;
+  players.forEach((player) => {
+    // bring all players back into play
+    player.inGame = true;
+    // reset all player powers
+    player.powers = {
+      maxspeed: 1,
+      weight: 1,
+      accel: 1,
+      returnToGame: false,
+      returnToGameCooldown: 0
+    };
+  });
+  // clear all powerups
+  powerups = [];
 }
 
 function movePlayer(player) {
