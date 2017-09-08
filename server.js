@@ -91,7 +91,9 @@ io.on('connection', (socket) => {
       powers: {
         maxspeed: 1,
         weight: 1,
-        accel: 1
+        accel: 1,
+        returnToGame: false,
+        returnToGameCooldown: 0
       },
       inGame: true,
       score: 0
@@ -127,7 +129,9 @@ function update() {
       player.powers = {
         maxspeed: 1,
         weight: 1,
-        accel: 1
+        accel: 1,
+        returnToGame: false,
+        returnToGameCooldown: 0
       };
     });
   }
@@ -184,22 +188,30 @@ function bounceOffWalls() {
         console.log(`disc : (${p.id}) "${p.nickname}" out of bounds with x:${p.pos.x}, y:${p.pos.y}`);
       } else if (centreDistance2 < innerR2) {
         // if trying to get back inside
-        // bounce off a 'ball' in the centre
-        // which has the same effect as bouncing off the grid
-        bounceBalls(p, {
-          pos: {
-            x: 0,
-            y: 0
-          },
-          vel: {
-            x: 0,
-            y: 0
-          },
-          powers: {
-            // set large weight for strong bounceback
-            weight: 20
-          }
-        });
+        // first check if they have the returnToGame powerup
+        // if so check if they're within the cooldown
+        if (p.powers.returnToGame && p.powers.returnToGameCooldown <= tickTime) {
+          // bring player back into game so they're not bounced out next tick
+          p.inGame = true;
+        } else {
+          // otherwise they should be thrown back, so
+          // bounce off a 'ball' in the centre
+          // which has the same effect as bouncing off the inner wall
+          bounceBalls(p, {
+            pos: {
+              x: 0,
+              y: 0
+            },
+            vel: {
+              x: 0,
+              y: 0
+            },
+            powers: {
+              // set large weight for strong bounceback
+              weight: 20
+            }
+          });
+        }
       }
     }
   });
@@ -286,7 +298,6 @@ function handlePowerups() {
             player.powers.weight = 0.7;
             break;
           case 6:
-          case 7: // a 'return to game' powerup is twice as common
             player.powers.returnToGame = true;
             // allow four seconds
             player.powers.returnToGameCooldown = tickTime + (1000 / tickLength) * 4;
@@ -300,13 +311,15 @@ function handlePowerups() {
     const innerR = getInnerRadius(tickTime),
       innerR2 = sq(innerR),
       outerR = getOuterRadius(tickTime),
-      outerR2 = sq(outerR),
-      type = Math.floor(Math.random() * 8);
+      outerR2 = sq(outerR);
     let x, y, distanceFromCentre;
-    let attempts = 20;
-    // if type > 5, then a returnToGame is being spawned
-    // and these should happen outside the inner circle
-    if (type > 5) {
+    let attempts = 20,
+      type = Math.floor(Math.random() * 8);
+    // spawn a returnToGame powerup with twice the probability of
+    // other powerups. Type of returnToGame is 6.
+    if (type === 7) type = 6;
+    // returnToGame should spawn outside the inner circle
+    if (type === 6) {
       do {
         x = (Math.random() - 0.5) * outerR2 * 2;
         y = (Math.random() - 0.5) * outerR2 * 2;
@@ -321,7 +334,7 @@ function handlePowerups() {
       } while (sq(x) + sq(y) > innerR2 && attempts-- > 0);
     }
     // if run out of attempts don't push powerup
-    if(attempts <= 0) return;
+    if (attempts <= 0) return;
     powerups.push({
       pos: {
         x,
@@ -330,7 +343,7 @@ function handlePowerups() {
       /* maxspeed: +:0, -:1
          weight:   +:2, -:3
          accel:    +:4, -:5
-         returnToGame: 6, 7
+         returnToGame: 6
       */
       type: type
     });
