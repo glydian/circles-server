@@ -66,7 +66,7 @@ io.on('connection', (socket) => {
     // generate player and add to list
     const id = socket.id;
     if (havePlayerID(id)) {
-      socket.emit('playerIDTaken');
+      socket.emit('conError', 'playerIdTaken');
       socket.disconnect();
       deletePlayer(id);
       return;
@@ -82,27 +82,18 @@ io.on('connection', (socket) => {
         x: 0,
         y: 0,
       },
-      keys: {
-        left: false,
-        up: false,
-        right: false,
-        down: false,
-      },
-      powers: {
-        maxspeed: 1,
-        weight: 1,
-        accel: 1,
-        returnToGame: false,
-        returnToGameCooldown: 0
-      },
+      keys: blankKeys(),
+      powers: blankPowers(),
       inGame: true,
       score: 0
     };
+    socket.emit('conSuccess');
     players.push(player);
     startTickingIfStopped();
   });
 
   socket.on('disconnect', () => {
+    console.log(`disc : (${socket.id}) disconnecting`);
     if (player === null) return;
     deletePlayer(player.id);
     console.log(`disc : (${player.id}) "${player.nickname}" disconnected`);
@@ -111,9 +102,9 @@ io.on('connection', (socket) => {
 
   socket.on('keyUpdate', (keys) => {
     if (player === null) {
-      socket.emit('noPlayerObject');
+      socket.emit('conError', 'noPlayerObject');
       socket.disconnect();
-    } else player.keys = keys;
+    } else player.keys = validateKeys(keys);
   });
 });
 
@@ -123,9 +114,7 @@ function update() {
   if (tickTime === gameLengthInTicks) {
     endRound();
   }
-  players.forEach((player) => {
-    movePlayer(player);
-  });
+  players.forEach(movePlayer);
   bounceOffWalls(); // will also change scores
   handleCollisions();
   handlePowerups();
@@ -139,13 +128,7 @@ function endRound() {
     // bring all players back into play
     player.inGame = true;
     // reset all player powers
-    player.powers = {
-      maxspeed: 1,
-      weight: 1,
-      accel: 1,
-      returnToGame: false,
-      returnToGameCooldown: 0
-    };
+    player.powers = blankPowers();
   });
   // clear all powerups
   powerups = [];
@@ -197,9 +180,10 @@ function bounceOffWalls() {
         // if trying to get back inside
         // first check if they have the returnToGame powerup
         // if so check if they're within the cooldown
-        if (p.powers.returnToGame && p.powers.returnToGameCooldown <= tickTime) {
+        if (p.powers.returnToGame) {
           // bring player back into game so they're not bounced out next tick
           p.inGame = true;
+          p.powers.returnToGame = false;
         } else {
           // otherwise they should be thrown back, so
           // bounce off a 'ball' in the centre
@@ -242,6 +226,12 @@ function handleCollisions() {
   }
 }
 
+function touchingPowerup(p, pu) {
+  const r = ballRadius;
+  if (p1.pos.x + r < p2.pos.x - r || p1.pos.x - r > p2.pos.x + r) return false;
+  else return touchingBalls(p, pu);
+}
+
 function touchingBalls(p1, p2) {
   // algorithm assumes x coordinates are in range
   const r = ballRadius;
@@ -276,39 +266,30 @@ function handlePowerups() {
   players.forEach((player) => {
     powerups.forEach((powerup) => {
       // check if player is touching powerup
-      if (player.pos.x - ballRadius > powerup.pos.x
-          || player.pos.x + ballRadius < powerup.pos.y
-          || player.pos.y - ballRadius > powerup.pos.x
-          || player.pos.y + ballRadius < powerup.pos.y) return;
-      const trueDist2 = Math.abs(sq(player.pos.x - powerup.pos.x) +
-        sq(player.pos.y - powerup.pos.y));
-      if (trueDist2 < sq(ballRadius)) {
-        // if so apply and delete the powerup
-        deletePowerup(powerup);
-        switch (powerup.type) {
-          case 0:
-            player.powers.maxspeed = 1.2;
-            break;
-          case 1:
-            player.powers.maxspeed = 0.8;
-            break;
-          case 2:
-            player.powers.weight = 1.5;
-            break;
-          case 3:
-            player.powers.weight = 0.7;
-            break;
-          case 4:
-            player.powers.accel = 1.5;
-            break;
-          case 5:
-            player.powers.weight = 0.7;
-            break;
-          case 6:
-            player.powers.returnToGame = true;
-            // allow four seconds
-            player.powers.returnToGameCooldown = tickTime + (1000 / tickLength) * 4;
-        }
+      if (!touchingPowerup(player, powerup)) return;
+      // if so apply and delete the powerup
+      deletePowerup(powerup);
+      switch (powerup.type) {
+        case 0:
+          player.powers.maxspeed = 1.2;
+          break;
+        case 1:
+          player.powers.maxspeed = 0.8;
+          break;
+        case 2:
+          player.powers.weight = 1.5;
+          break;
+        case 3:
+          player.powers.weight = 0.7;
+          break;
+        case 4:
+          player.powers.accel = 1.5;
+          break;
+        case 5:
+          player.powers.weight = 0.7;
+          break;
+        case 6:
+          player.powers.returnToGame = true;
       }
     });
   });
@@ -364,7 +345,8 @@ function sendDataToClients() {
       pos: player.pos,
       nickname: player.nickname,
       id: player.id,
-      score: player.score
+      score: player.score,
+      powers: player.powers
     });
   });
   io.emit('mapUpdate', {
@@ -411,6 +393,24 @@ function sq(x) {
   return x * x;
 }
 
+function blankPowers() {
+  return {
+    maxspeed: 1,
+    weight: 1,
+    accel: 1,
+    returnToGame: false
+  };
+}
+
+function blankKeys() {
+  return {
+        left: false,
+        up: false,
+        right: false,
+        down: false,
+      };
+}
+
 function havePlayerID(id) {
   for (let x = 0; x < players.length; x++)
     if (players[x].id === id) return true;
@@ -429,5 +429,15 @@ function deletePlayer(id) {
 }
 
 function validateNickname(n) {
-  return (n === undefined || n === '') ? 'player' : n.substring(0, 12);
+  return (n === undefined || n === '' || n == null) ? 'player' : n.substring(0, 12);
+}
+
+function validateKeys(keys){
+  const r = blankKeys();
+  if(keys == null) return r;
+  if(keys.left === true) r.left = true;
+  if(keys.up === true) r.up = true;
+  if(keys.down === true) r.down = true;
+  if(keys.right === true) r.right = true;
+  return r;
 }
