@@ -255,7 +255,7 @@ function bounceBalls(p1, p2, pinballEffect) {
   let pinball1 = pinball,
     pinball2 = pinball;
   if(!pinballEffect){
-     // fuck decent program structure
+     pinball1 = pinball2 = 1;
   }else if(biggervel > 0){
     pinball2 += 0.1;
   }else if(biggervel < 0){
