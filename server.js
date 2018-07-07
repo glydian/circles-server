@@ -197,7 +197,7 @@ function bounceOffWalls() {
               // set large weight for strong bounceback
               weight: 20
             }
-          });
+          }, false);
         }
       }
     }
@@ -218,7 +218,7 @@ function handleCollisions() {
     let xlimit = p1.pos.x + ballRadius * 2;
     // only compare following balls with pos.x < xlimit
     for (let y = x + 1; y < players.length && players[y].pos.x <= xlimit; y++)
-      if (touchingBalls(p1, players[y])) bounceBalls(p1, players[y]);
+      if (touchingBalls(p1, players[y])) bounceBalls(p1, players[y], true);
   }
 }
 
@@ -235,7 +235,7 @@ function touchingBalls(p1, p2) {
   else return sq(p2.pos.x - p1.pos.x) + sq(p2.pos.y - p1.pos.y) < sq(r + r);
 }
 
-function bounceBalls(p1, p2) {
+function bounceBalls(p1, p2, pinballEffect) {
   const xDist = p1.pos.x - p2.pos.x,
     yDist = p1.pos.y - p2.pos.y,
     distSq = sq(xDist) + sq(yDist),
@@ -250,14 +250,16 @@ function bounceBalls(p1, p2) {
     massTotal = p1.powers.weight + p2.powers.weight,
     weight1 = 2 * p2.powers.weight / massTotal,
     weight2 = 2 * p1.powers.weight / massTotal,
-    pinball = 1.4,
+    pinball = 1.4 - 0.4 * (tickTime / gameLengthInTicks),
     biggervel = p1.vel.x + p1.vel.y - p2.vel.x - p2.vel.y;
   let pinball1 = pinball,
     pinball2 = pinball;
-  if(biggervel > 0){
-    pinball2 += 0.2;
+  if(!pinballEffect){
+     // fuck decent program structure
+  }else if(biggervel > 0){
+    pinball2 += 0.1;
   }else if(biggervel < 0){
-    pinball1 += 0.2;
+    pinball1 += 0.1;
   }
   // change player velocities
   p1.vel.x = xCol * weight1 * pinball1;
