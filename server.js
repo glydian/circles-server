@@ -103,7 +103,6 @@ io.on('connection', (socket) => {
   socket.on('keyUpdate', (keys) => {
     if (player === null) {
       socket.emit('conError', 'noPlayerObject');
-      socket.disconnect();
     } else player.keys = validateKeys(keys);
   });
 });
@@ -135,7 +134,8 @@ function endRound() {
 }
 
 function movePlayer(player) {
-  const naccel = accel * player.powers.accel;
+  const naccel = accel * player.powers.accel,
+        nmaxspeed = maxSpeed * player.powers.maxspeed;
   if (player.keys.left && player.vel.x >= -nmaxspeed) player.vel.x -= naccel;
   if (player.keys.up && player.vel.y >= -nmaxspeed) player.vel.y -= naccel;
   if (player.keys.down && player.vel.y <= nmaxspeed) player.vel.y += naccel;
