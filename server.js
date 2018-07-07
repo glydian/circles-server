@@ -136,17 +136,12 @@ function endRound() {
 
 function movePlayer(player) {
   const naccel = accel * player.powers.accel;
-  if (player.keys.left) player.vel.x -= naccel;
-  if (player.keys.up) player.vel.y -= naccel;
-  if (player.keys.down) player.vel.y += naccel;
-  if (player.keys.right) player.vel.x += naccel;
+  if (player.keys.left && player.vel.x >= -nmaxspeed) player.vel.x -= naccel;
+  if (player.keys.up && player.vel.y >= -nmaxspeed) player.vel.y -= naccel;
+  if (player.keys.down && player.vel.y <= nmaxspeed) player.vel.y += naccel;
+  if (player.keys.right && player.vel.x <= nmaxspeed) player.vel.x += naccel;
   player.vel.x *= 0.997;
   player.vel.y *= 0.997;
-  const nmaxspeed = maxSpeed * player.powers.maxspeed;
-  if (player.vel.x > nmaxspeed) player.vel.x = nmaxspeed;
-  if (player.vel.x < -nmaxspeed) player.vel.x = -nmaxspeed;
-  if (player.vel.y > nmaxspeed) player.vel.y = nmaxspeed;
-  if (player.vel.y < -nmaxspeed) player.vel.y = -nmaxspeed;
   player.pos.x += player.vel.x;
   player.pos.y += player.vel.y;
 }
@@ -154,7 +149,8 @@ function movePlayer(player) {
 function bounceOffWalls() {
   const innerR2 = sq(getInnerRadius(tickTime) + ballRadius);
   const outerR2 = sq(getOuterRadius(tickTime) + ballRadius);
-  let playersInside = 0;
+  // take a point off, because the player that leaves shouldn't be counted
+  let playersInside = -1;
   players.forEach((p) => {
     if (p.inGame) playersInside += 1;
   });
@@ -206,7 +202,7 @@ function bounceOffWalls() {
       }
     }
   });
-  players.forEach((p) => {
+  if(playersFallenOutside > 0) players.forEach((p) => {
     if (p.inGame) p.score += playersFallenOutside;
   });
 }
@@ -226,7 +222,7 @@ function handleCollisions() {
   }
 }
 
-function touchingPowerup(p, pu) {
+function touchingPowerup(p1, p2) {
   const r = ballRadius;
   if (p1.pos.x + r < p2.pos.x - r || p1.pos.x - r > p2.pos.x + r) return false;
   else return touchingBalls(p, pu);
@@ -253,12 +249,21 @@ function bounceBalls(p1, p2) {
     yCol = yDist * collisionScale,
     massTotal = p1.powers.weight + p2.powers.weight,
     weight1 = 2 * p2.powers.weight / massTotal,
-    weight2 = 2 * p1.powers.weight / massTotal;
+    weight2 = 2 * p1.powers.weight / massTotal,
+    pinball = 1.4,
+    biggervel = p1.vel.x + p1.vel.y - p2.vel.x - p2.vel.y,
+    pinball1 = pinball,
+    pinball2 = pinball;
+  if(biggervel > 0){
+    pinball2 += 0.2;
+  }else if(biggervel < 0){
+    pinball1 += 0.2;
+  }
   // change player velocities
-  p1.vel.x = xCol * weight1;
-  p1.vel.y = yCol * weight1;
-  p2.vel.x = -xCol * weight2;
-  p2.vel.y = -yCol * weight2;
+  p1.vel.x = xCol * weight1 * pinball1;
+  p1.vel.y = yCol * weight1 * pinball1;
+  p2.vel.x = -xCol * weight2 * pinball2;
+  p2.vel.y = -yCol * weight2 * pinball2;
 }
 
 function handlePowerups() {
