@@ -251,8 +251,8 @@ function bounceBalls(p1, p2) {
     weight1 = 2 * p2.powers.weight / massTotal,
     weight2 = 2 * p1.powers.weight / massTotal,
     pinball = 1.4,
-    biggervel = p1.vel.x + p1.vel.y - p2.vel.x - p2.vel.y,
-    pinball1 = pinball,
+    biggervel = p1.vel.x + p1.vel.y - p2.vel.x - p2.vel.y;
+  let pinball1 = pinball,
     pinball2 = pinball;
   if(biggervel > 0){
     pinball2 += 0.2;
