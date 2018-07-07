@@ -225,7 +225,7 @@ function handleCollisions() {
 function touchingPowerup(p1, p2) {
   const r = ballRadius;
   if (p1.pos.x + r < p2.pos.x - r || p1.pos.x - r > p2.pos.x + r) return false;
-  else return touchingBalls(p, pu);
+  else return touchingBalls(p1, p2);
 }
 
 function touchingBalls(p1, p2) {
