@@ -17,7 +17,7 @@ httpsServer.listen(3000, () => console.log('https running on port 3000'));
 const tickLength = 20;
 const gameLengthInTicks = 1500;
 
-const maxSpeed = 14;
+const maxSpeed = 8;
 const accel = 0.9;
 const ballRadius = 20;
 
@@ -159,7 +159,7 @@ function movePlayer(player) {
   if (player.keys.right) player.vel.x += naccel;
   player.vel.x *= 0.997;
   player.vel.y *= 0.997;
-  let nmaxspeed = maxSpeed * player.powers.maxspeed;
+  const nmaxspeed = maxSpeed * player.powers.maxspeed;
   if (player.vel.x > nmaxspeed) player.vel.x = nmaxspeed;
   if (player.vel.x < -nmaxspeed) player.vel.x = -nmaxspeed;
   if (player.vel.y > nmaxspeed) player.vel.y = nmaxspeed;
@@ -276,10 +276,10 @@ function handlePowerups() {
   players.forEach((player) => {
     powerups.forEach((powerup) => {
       // check if player is touching powerup
-      if (player.pos.x - ballRadius > powerup.pos.x) return;
-      if (player.pos.x + ballRadius < powerup.pos.y) return;
-      if (player.pos.y - ballRadius > powerup.pos.x) return;
-      if (player.pos.y + ballRadius < powerup.pos.y) return;
+      if (player.pos.x - ballRadius > powerup.pos.x
+          || player.pos.x + ballRadius < powerup.pos.y
+          || player.pos.y - ballRadius > powerup.pos.x
+          || player.pos.y + ballRadius < powerup.pos.y) return;
       const trueDist2 = Math.abs(sq(player.pos.x - powerup.pos.x) +
         sq(player.pos.y - powerup.pos.y));
       if (trueDist2 < sq(ballRadius)) {
@@ -387,6 +387,7 @@ function getFreePosition() {
     ly = ty - ballRadius;
     ux = tx + ballRadius;
     uy = ty + ballRadius;
+    // check that this space doesn't clash with another player
     for (let x = 0; x < players.length; x++) {
       const p = players[x];
       if (p.x > lx && p.x < ux && p.y > ly && p.y < uy) {
@@ -399,6 +400,7 @@ function getFreePosition() {
       y: ty
     };
   }
+  // if no free space, plop them in the centre and hope for the best
   return {
     x: 0,
     y: 0
